@@ -1,15 +1,6 @@
-# ── Stage 1: dependencies ─────────────────────────────────────────────────────
-FROM node:22-slim AS deps
+FROM node:22-slim
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-
-# ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM node:22-slim AS runtime
-
-# System dependencies for Chrome/Puppeteer and FFmpeg
+# System dependencies for chrome-headless-shell and FFmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
@@ -47,40 +38,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
   && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user WITH a real home directory
-RUN groupadd -r appuser \
-  && useradd -r -g appuser -G audio,video \
-     --create-home --home-dir /home/appuser appuser
+# Create appuser WITH real home directory (-m creates /home/appuser)
+RUN useradd -m -u 1001 -s /bin/bash appuser
 
 WORKDIR /app
-
-# Copy pre-built node_modules
-COPY --from=deps /app/node_modules ./node_modules
-COPY src/ ./src/
 COPY package*.json ./
+RUN npm ci --omit=dev
+COPY src/ ./src/
 
-# ── Chrome pre-install during BUILD (as root, full write access) ───────────────
-# Install into /tmp/.cache/hyperframes so the binary is baked into the image.
-# HYPERFRAMES_CACHE_DIR tells HyperFrames where to look at runtime too.
+# Install chrome-headless-shell during BUILD into appuser's home cache.
+# HyperFrames resolves Chrome from ~/.cache/puppeteer by default.
+# We point PUPPETEER_CACHE_DIR there and run `browser ensure` (not install).
+ENV PUPPETEER_CACHE_DIR=/home/appuser/.cache/puppeteer
 ENV HYPERFRAMES_CACHE_DIR=/tmp/.cache/hyperframes
-ENV PUPPETEER_CACHE_DIR=/tmp/.cache/hyperframes
 
-RUN mkdir -p /tmp/.cache/hyperframes \
-  && ./node_modules/.bin/hyperframes browser install 2>&1 || echo "hyperframes browser install skipped" \
-  && chmod -R 755 /tmp/.cache/hyperframes
+RUN mkdir -p /home/appuser/.cache/puppeteer /tmp/.cache/hyperframes \
+  && ./node_modules/.bin/hyperframes browser ensure \
+  && chown -R appuser:appuser /home/appuser \
+  && chmod -R 755 /home/appuser/.cache
 
-# ── Runtime env ───────────────────────────────────────────────────────────────
-ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu --single-process"
-ENV CHROME_FLAGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu --single-process"
+# No-sandbox flags required in Docker (no kernel namespace support)
+ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu"
+ENV CHROME_FLAGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu"
 ENV PUPPETEER_NO_SANDBOX="1"
 ENV DBUS_SESSION_BUS_ADDRESS="/dev/null"
 ENV NODE_ENV="production"
 
-# Fix ownership of app files for non-root user
-RUN chown -R appuser:appuser /app /home/appuser
+RUN chown -R appuser:appuser /app
 
 EXPOSE 3000
-
 USER appuser
-
 CMD ["node", "src/index.js"]
