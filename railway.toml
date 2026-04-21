@@ -1,0 +1,13 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Chrome + FFmpeg rendering is CPU/memory intensive.
+# Minimum recommended: 2 vCPU, 2GB RAM.
+# Increase to 4GB if handling large posts or high concurrency.
