@@ -3,6 +3,17 @@
 const { load } = require('cheerio');
 
 /**
+ * Replaces system/platform fonts in raw HTML with DM Sans before any processing.
+ * Catches SF Pro, -apple-system, system-ui, BlinkMacSystemFont, Helvetica, Arial.
+ */
+function sanitizeFonts(html) {
+  return html.replace(
+    /font-family:\s*["']?(SF Pro[^"';,]*|-apple-system|system-ui|BlinkMacSystemFont|Helvetica Neue|Helvetica|Arial)[^;]*;/gi,
+    "font-family: 'DM Sans', sans-serif;"
+  );
+}
+
+/**
  * Extracts structured data from Instagram post HTML.
  * Tries three strategies in order: JSON-LD, OpenGraph meta tags, CSS selectors.
  */
@@ -123,4 +134,4 @@ function formatCount(n) {
   return n.toLocaleString();
 }
 
-module.exports = { parseInstagramHTML, formatCount };
+module.exports = { parseInstagramHTML, sanitizeFonts, formatCount };

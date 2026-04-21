@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
 
-const { parseInstagramHTML } = require('./parser');
+const { parseInstagramHTML, sanitizeFonts } = require('./parser');
 const { generateComposition } = require('./composer');
 const { renderComposition } = require('./renderer');
 
@@ -64,8 +64,11 @@ async function convert(html) {
   console.log(`[job:${jobId}] started in ${jobDir}`);
 
   try {
-    // 1. Parse
-    const postData = parseInstagramHTML(html);
+    // 1. Sanitize system fonts → DM Sans before any processing
+    const sanitizedHtml = sanitizeFonts(html);
+
+    // 2. Parse
+    const postData = parseInstagramHTML(sanitizedHtml);
     console.log(`[job:${jobId}] parsed — @${postData.username}, imageUrls: ${postData.imageUrls.length}`);
 
     // 2. Download first image
