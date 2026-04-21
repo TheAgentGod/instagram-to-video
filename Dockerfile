@@ -55,7 +55,6 @@ WORKDIR /app
 
 # Copy pre-built node_modules (includes Chrome download from deps stage)
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /root/.cache /root/.cache 2>/dev/null || true
 
 COPY src/ ./src/
 COPY package*.json ./
