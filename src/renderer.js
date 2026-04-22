@@ -19,7 +19,6 @@ function renderComposition(compositionDir, outputPath) {
       '--quality', 'low',
       '--fps', '24',
       '--workers', '1',
-      '--ffmpeg-path', '/usr/bin/ffmpeg',
     ];
 
     const env = {
