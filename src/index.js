@@ -11,6 +11,8 @@ const { renderComposition } = require('./renderer');
 
 const app = express();
 
+const jobs = new Map();
+
 // Accept raw HTML body or JSON with an "html" key
 app.use(express.json({ limit: '15mb' }));
 app.use(express.text({ type: 'text/html', limit: '15mb' }));
@@ -54,14 +56,12 @@ async function downloadImage(url, destPath) {
 // Conversion pipeline
 // ---------------------------------------------------------------------------
 
-async function convert(html) {
-  const jobId = crypto.randomUUID();
+async function convert(html, jobId) {
   const jobDir = path.join(os.tmpdir(), `hf-${jobId}`);
   await fsp.mkdir(jobDir, { recursive: true });
   console.log(`[job:${jobId}] started in ${jobDir}`);
 
   try {
-    // Añadir los atributos Hyperframes al div raíz del HTML recibido
     const compositionHTML = injectHyperframesAttributes(html);
     await fsp.writeFile(path.join(jobDir, 'index.html'), compositionHTML, 'utf8');
 
@@ -70,7 +70,7 @@ async function convert(html) {
 
     const videoBuffer = await fsp.readFile(outputPath);
     console.log(`[job:${jobId}] done — ${videoBuffer.length} bytes`);
-    return { jobId, videoBuffer };
+    return videoBuffer;
   } finally {
     fsp.rm(jobDir, { recursive: true, force: true }).catch(() => {});
   }
@@ -114,30 +114,33 @@ function injectHyperframesAttributes(html) {
 // ---------------------------------------------------------------------------
 
 // POST /convert
-// Body: raw HTML (Content-Type: text/html)
-//   or JSON { "html": "..." }
-//   or form  { "html": "..." }
 app.post('/convert', async (req, res) => {
-  const html = typeof req.body === 'string'
-    ? req.body
-    : req.body?.html;
+  const html = typeof req.body === 'string' ? req.body : req.body?.html;
+  if (!html || html.trim().length < 10) return res.status(400).json({ error: 'Missing html' });
 
-  if (!html || typeof html !== 'string' || html.trim().length < 10) {
-    return res.status(400).json({ error: 'Missing or empty "html" body' });
-  }
+  const jobId = crypto.randomUUID();
+  jobs.set(jobId, { status: 'processing', videoBuffer: null, error: null });
 
-  try {
-    const { jobId, videoBuffer } = await convert(html);
+  res.json({ jobId });
 
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', `attachment; filename="post-${jobId}.mp4"`);
-    res.setHeader('Content-Length', videoBuffer.length);
-    res.setHeader('X-Job-Id', jobId);
-    res.send(videoBuffer);
-  } catch (err) {
-    console.error('[/convert] error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  convert(html, jobId).then(videoBuffer => {
+    jobs.set(jobId, { status: 'done', videoBuffer, error: null });
+  }).catch(err => {
+    jobs.set(jobId, { status: 'error', videoBuffer: null, error: err.message });
+  });
+});
+
+// GET /result/:jobId
+app.get('/result/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (job.status === 'processing') return res.json({ status: 'processing' });
+  if (job.status === 'error') return res.status(500).json({ error: job.error });
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Disposition', `attachment; filename="reel-${req.params.jobId}.mp4"`);
+  res.send(job.videoBuffer);
+  jobs.delete(req.params.jobId);
 });
 
 // GET /health
