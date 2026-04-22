@@ -20,6 +20,7 @@ function renderComposition(compositionDir, outputPath) {
       '--fps', '24',
       '--workers', '1',
       '--docker',
+      '--ffmpeg-path', '/usr/bin/ffmpeg',
     ];
 
     const env = {

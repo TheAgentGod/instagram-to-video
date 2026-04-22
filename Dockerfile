@@ -61,8 +61,12 @@ RUN mkdir -p /home/appuser/.cache/puppeteer /tmp/.cache/hyperframes \
 ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu"
 ENV CHROME_FLAGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu"
 ENV PUPPETEER_NO_SANDBOX="1"
+ENV FFMPEG_PATH="/usr/bin/ffmpeg"
+ENV FFMPEG_PROBE_PATH="/usr/bin/ffprobe"
 ENV DBUS_SESSION_BUS_ADDRESS="/dev/null"
 ENV NODE_ENV="production"
+
+RUN which ffmpeg && ffmpeg -version
 
 RUN chown -R appuser:appuser /app
 
