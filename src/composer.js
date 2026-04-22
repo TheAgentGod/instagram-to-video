@@ -152,7 +152,7 @@ function generateComposition(postData, localImagePath) {
       height: 1920px;
       overflow: hidden;
       background: #0a0a0a;
-      font-family: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+      font-family: 'DM Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -282,10 +282,11 @@ function generateComposition(postData, localImagePath) {
     }
 
     .handle-username {
-      font-size: 30px;
-      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      font-weight: 400;
       color: #ffffff;
-      letter-spacing: -0.3px;
+      letter-spacing: 1px;
     }
 
     .handle-displayname {
