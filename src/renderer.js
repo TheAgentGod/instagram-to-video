@@ -19,7 +19,6 @@ function renderComposition(compositionDir, outputPath) {
       '--quality', 'standard',
       '--fps', '30',
       '--workers', '1',
-      '--docker',
     ];
 
     const env = {
