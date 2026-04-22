@@ -17,7 +17,7 @@ function renderComposition(compositionDir, outputPath) {
       'render',
       '--output', outputPath,
       '--quality', 'draft',
-      '--fps', '24',
+      '--fps', '15',
       '--workers', '1',
     ];
 

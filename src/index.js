@@ -91,7 +91,7 @@ function injectHyperframesAttributes(html) {
   let result = html
     .replace(
       /(<div[^>]*style="[^"]*width:\s*1080px[^"]*height:\s*1440px[^"]*")/,
-      '$1 data-composition-id="bb-slide" data-width="1080" data-height="1440" data-duration="6" class="clip" data-start="0" data-track-index="0"'
+      '$1 data-composition-id="bb-slide" data-width="1080" data-height="1440" data-duration="3" class="clip" data-start="0" data-track-index="0"'
     )
     .replace('</head>', `${hyperframesHead}</head>`);
 
