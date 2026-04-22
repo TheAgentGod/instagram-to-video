@@ -7,8 +7,6 @@ const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
 
-const { parseInstagramHTML, sanitizeFonts } = require('./parser');
-const { generateComposition } = require('./composer');
 const { renderComposition } = require('./renderer');
 
 const app = express();
@@ -59,42 +57,56 @@ async function downloadImage(url, destPath) {
 async function convert(html) {
   const jobId = crypto.randomUUID();
   const jobDir = path.join(os.tmpdir(), `hf-${jobId}`);
-
   await fsp.mkdir(jobDir, { recursive: true });
   console.log(`[job:${jobId}] started in ${jobDir}`);
 
   try {
-    // 1. Sanitize system fonts → DM Sans before any processing
-    const sanitizedHtml = sanitizeFonts(html);
-
-    // 2. Parse
-    const postData = parseInstagramHTML(sanitizedHtml);
-    console.log(`[job:${jobId}] parsed — @${postData.username}, imageUrls: ${postData.imageUrls.length}`);
-
-    // 2. Download first image
-    let localImageFile = null;
-    for (const url of postData.imageUrls) {
-      localImageFile = await downloadImage(url, jobDir);
-      if (localImageFile) break;
-    }
-
-    // 3. Generate composition
-    const compositionHTML = generateComposition(postData, localImageFile);
+    // Añadir los atributos Hyperframes al div raíz del HTML recibido
+    const compositionHTML = injectHyperframesAttributes(html);
     await fsp.writeFile(path.join(jobDir, 'index.html'), compositionHTML, 'utf8');
 
-    // 4. Render
     const outputPath = path.join(jobDir, 'output.mp4');
     await renderComposition(jobDir, outputPath);
 
-    // 5. Read result
     const videoBuffer = await fsp.readFile(outputPath);
     console.log(`[job:${jobId}] done — ${videoBuffer.length} bytes`);
-
     return { jobId, videoBuffer };
   } finally {
-    // Async cleanup — don't wait for it
     fsp.rm(jobDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+function injectHyperframesAttributes(html) {
+  // Añade GSAP inline y convierte el div principal en composición Hyperframes
+  const gsapScript = fs.readFileSync(
+    path.join(__dirname, '..', 'node_modules', 'gsap', 'dist', 'gsap.min.js'),
+    'utf8'
+  );
+
+  const hyperframesHead = `
+  <script>${gsapScript}</script>
+  <script>window.__timelines = window.__timelines || {};</script>`;
+
+  // Inyecta data-composition-id, data-width, data-height, data-duration en el div raíz 1080x1440
+  let result = html
+    .replace(
+      /(<div[^>]*style="[^"]*width:\s*1080px[^"]*height:\s*1440px[^"]*")/,
+      '$1 data-composition-id="bb-slide" data-width="1080" data-height="1440" data-duration="6" class="clip" data-start="0" data-track-index="0"'
+    )
+    .replace('</head>', `${hyperframesHead}</head>`);
+
+  // Añade timeline GSAP simple con fade in si no hay uno
+  if (!result.includes('window.__timelines[')) {
+    result = result.replace('</body>', `
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.from('[data-composition-id="bb-slide"]', { opacity: 0, duration: 0.5 }, 0);
+      window.__timelines['bb-slide'] = tl;
+    </script>
+    </body>`);
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
