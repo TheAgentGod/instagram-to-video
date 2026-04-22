@@ -87,7 +87,7 @@ function generateComposition(postData, localImagePath) {
   <div class="overlay-bottom"></div>
 
   <!-- ── Timed clip: all content ── -->
-  <div id="scene" data-start="0" data-duration="9" data-track-index="0">
+  <div id="scene" class="clip" data-start="0" data-duration="9" data-track-index="0">
     <div class="scene-content">
 
       <!-- Spacer: pushes content to bottom third -->
