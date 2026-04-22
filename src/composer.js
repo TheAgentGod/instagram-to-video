@@ -1,6 +1,13 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { formatCount } = require('./parser');
+
+const GSAP_INLINE = fs.readFileSync(
+  path.join(__dirname, '..', 'node_modules', 'gsap', 'dist', 'gsap.min.js'),
+  'utf8'
+);
 
 // Seeded PRNG — deterministic, no Math.random() (required by HyperFrames)
 function mulberry32(seed) {
@@ -302,7 +309,7 @@ function generateComposition(postData, localImagePath) {
     }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>${GSAP_INLINE}</script>
   <script>
     window.__timelines = window.__timelines || {};
     const tl = gsap.timeline({ paused: true });

@@ -44,6 +44,7 @@ RUN useradd -m -u 1001 -s /bin/bash appuser
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
+RUN npm install gsap
 COPY src/ ./src/
 
 # Install chrome-headless-shell during BUILD into appuser's home cache.

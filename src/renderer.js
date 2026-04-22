@@ -26,6 +26,7 @@ function renderComposition(compositionDir, outputPath) {
       // Required for Chrome in Docker/Railway (no sandbox)
       PUPPETEER_ARGS: '--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu',
       CHROME_FLAGS: '--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu',
+      HYPERFRAMES_NO_SANDBOX: '1',
     };
 
     execFile(HYPERFRAMES_BIN, args, {
