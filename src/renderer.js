@@ -16,8 +16,8 @@ function renderComposition(compositionDir, outputPath) {
     const args = [
       'render',
       '--output', outputPath,
-      '--quality', 'standard',
-      '--fps', '30',
+      '--quality', 'low',
+      '--fps', '24',
       '--workers', '1',
     ];
 

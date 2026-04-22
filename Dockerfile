@@ -66,6 +66,9 @@ ENV NODE_ENV="production"
 
 RUN chown -R appuser:appuser /app
 
+ENV FFMPEG_THREADS="1"
+ENV HYPERFRAMES_FFMPEG_THREADS="1"
+
 EXPOSE 3000
 USER appuser
 CMD ["node", "src/index.js"]
